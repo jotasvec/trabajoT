@@ -5,11 +5,10 @@
 import cv2
 from threading import *
 import numpy as np
-import os
-from subprocess import *
-import Image
-#import livestreamer
-# import urllib
+#import os
+import subprocess as sp
+#import Image
+#import urllib
 #import librtmp
 
 
@@ -35,7 +34,8 @@ def esvacio(cadena):
 listaImgs= []
 listaVids= []
 listaCams= ['camara1', 'camara2']
-dicEffectos = {'0':'noEffects',\
+dicEffectos = {
+				'0':'noEffects',\
 				'1':'efecto1',\
 				'2':'efecto2',\
 				'3':'efecto3',\
@@ -51,7 +51,8 @@ dicEffectos = {'0':'noEffects',\
 				'13':'efecto13',\
 				'14':'efecto14'}
 
-dicFonts = {cv2.FONT_HERSHEY_SIMPLEX:"FONT_HERSHEY_SIMPLEX",\
+dicFonts = {
+			cv2.FONT_HERSHEY_SIMPLEX:"FONT_HERSHEY_SIMPLEX",\
 			cv2.FONT_HERSHEY_PLAIN:"FONT_HERSHEY_PLAIN",\
 			cv2.FONT_HERSHEY_DUPLEX:"FONT_HERSHEY_DUPLEX",\
 			cv2.FONT_HERSHEY_COMPLEX:"FONT_HERSHEY_COMPLEX",\
@@ -290,12 +291,29 @@ class EffectsCam:
 fourcc = cv2.VideoWriter_fourcc('m','p','4','v')
 pathVid ='img/output2.avi'
 out = cv2.VideoWriter(pathVid, fourcc, 15, (width,height))
+
+FFMPEG_BIN = "ffmpeg"
+
 #cmd=("avconv -i img/frames/%07d.jpg -r 10 -vcodec libx264 -f flv rtmp://moises.inf.uct.cl/live/canal1")
-cmd=("avconv -i /tmp/out.mpg -r 10 -vcodec libx264 -f flv rtmp://moises.inf.uct.cl/live/canal1")
+cmd=("ffmpeg -i /tmp/out.mpg -r 10 -vcodec libx264 -f flv rtmp://moises.inf.uct.cl/live/canal1")
 
 cmd = cmd.split()
-cmd2=("avconv -y -f image2pipe -vcodec mjpeg -r 24 -i - -vcodec mpeg4 -qscale 5 -r 24 /tmp/out.mpg")
+#cmd2=("ffmpeg -y -f image2pipe -vcodec mjpeg -r 24 -i - -vcodec mpeg4 -qscale 5 -r 24 output.mpeg")
+cmd2 = ("ffmpeg -y -f rawvideo -pix_fmt bgr24 -r 30 -i - -an -vcodec mpeg4 output.mpg")
 cmd2 = cmd2.split()
+
+command = [
+		FFMPEG_BIN,
+		'-y',
+		'-f', 'rawvideo',  # indica que no hay formato de video
+		'-vcodec', 'rawvideo',
+		'-s', '400,300',  # size
+		'-pix_fmt', 'rgb24',  # pix format
+		'-r', '30',  # framerate
+		'-i', '-',  # la entrada viene de na tuberia
+		'-f', 'flv',  # formto flv
+		'rtmp://moises.inf.uct.cl/live/canal1'
+		]
 
 posCapStream = 0
 
@@ -315,7 +333,10 @@ class dataFrame(object):
 		# self.i=0
 		# cv2.imwrite('img/frames/%07d.jpg' %self.i,self.frame)
 		# self.i+=1
-		Popen(cmd2,stdin=PIPE, stdout=PIPE)
+		#ffmpeg -f image
+		#cmd2=("ffmpeg -y -f image2pipe -vcodec mjpeg -r 24 -i - -vcodec mpeg4 -qscale 5 -r 24 output.mpg")
+		proc = sp.Popen(command, stdin=sp.PIPE, stderr=sp.PIPE)
+		proc.stdin.write(self.frame.tostring())
 
 
 		#stdin.read(self.frame)
@@ -335,8 +356,9 @@ class dataFrame(object):
 	def sendFrame(self):
 		#dato = posCapStream-10
 		# i = posCapStream
-		Call(cmd)  # %i
-
+		#Call(cmd)  # %i
+		
+		proc.stdin.write(self.frame.tostring())
 
 		# avconv -i <fuente_archivo> -vcodec libx264 -f flv rtmp://moises.inf.uct.cl/live/canal1
 		# avconv -f video4linux2 -i /dev/video0 mycam2.mpeg -vcodec libx264 -f flv rtmp://moises.inf.uct.cl/live/canal1
