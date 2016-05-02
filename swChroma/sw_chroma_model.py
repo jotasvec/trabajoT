@@ -49,7 +49,8 @@ dicEffectos = {
 				'11':'efecto11',\
 				'12':'efecto12',\
 				'13':'efecto13',\
-				'14':'efecto14'}
+				'14':'efecto14'
+				}
 
 dicFonts = {
 			cv2.FONT_HERSHEY_SIMPLEX:"FONT_HERSHEY_SIMPLEX",\
@@ -60,7 +61,8 @@ dicFonts = {
 			cv2.FONT_HERSHEY_COMPLEX_SMALL:"FONT_HERSHEY_COMPLEX_SMALL",\
 			cv2.FONT_HERSHEY_SCRIPT_SIMPLEX:"FONT_HERSHEY_SCRIPT_SIMPLEX",\
 			cv2.FONT_HERSHEY_SCRIPT_COMPLEX:"FONT_HERSHEY_SCRIPT_COMPLEX",\
-			cv2.FONT_ITALIC:"FONT_ITALIC"}
+			cv2.FONT_ITALIC:"FONT_ITALIC"
+			}
 
 
 listFontSize = ['1','2','3','4','5']
@@ -290,52 +292,63 @@ class EffectsCam:
 (width,height) = (352,288)
 fourcc = cv2.VideoWriter_fourcc('m','p','4','v')
 pathVid ='img/output2.avi'
-out = cv2.VideoWriter(pathVid, fourcc, 15, (width,height))
+out = cv2.VideoWriter(pathVid, fourcc, 30, (width,height))
 
 FFMPEG_BIN = "ffmpeg"
 
 #cmd=("avconv -i img/frames/%07d.jpg -r 10 -vcodec libx264 -f flv rtmp://moises.inf.uct.cl/live/canal1")
-cmd=("ffmpeg -i /tmp/out.mpg -r 10 -vcodec libx264 -f flv rtmp://moises.inf.uct.cl/live/canal1")
+# cmd=("ffmpeg -i /tmp/out.mpg -r 10 -vcodec libx264 -f flv rtmp://moises.inf.uct.cl/live/canal1")
 
-cmd = cmd.split()
-#cmd2=("ffmpeg -y -f image2pipe -vcodec mjpeg -r 24 -i - -vcodec mpeg4 -qscale 5 -r 24 output.mpeg")
-cmd2 = ("ffmpeg -y -f rawvideo -pix_fmt bgr24 -r 30 -i - -an -vcodec mpeg4 output.mpg")
-cmd2 = cmd2.split()
+# cmd = cmd.split()
+# #cmd2=("ffmpeg -y -f image2pipe -vcodec mjpeg -r 24 -i - -vcodec mpeg4 -qscale 5 -r 24 output.mpeg")
+# cmd2 = ("ffmpeg -y -f rawvideo -pix_fmt bgr24 -r 30 -i - -an -vcodec mpeg4 output.mpeg")
+# cmd2 = cmd2.split()
 
 command = [
 		FFMPEG_BIN,
 		'-y',
 		'-f', 'rawvideo',  # indica que no hay formato de video
 		'-vcodec', 'rawvideo',
-		'-s', '400,300',  # size
+		'-s', '400x300',  # size
 		'-pix_fmt', 'rgb24',  # pix format
 		'-r', '30',  # framerate
-		'-i', '-',  # la entrada viene de na tuberia
+		'-i', '-',  # la entrada viene de la tuberia
+		'-vcodec','libx264',
 		'-f', 'flv',  # formto flv
 		'rtmp://moises.inf.uct.cl/live/canal1'
 		]
 
-posCapStream = 0
+command2 = [
+		FFMPEG_BIN,
+		'-y',
+		'-f', 'rawimage',
+		'-f', 'image2pipe',
+		'-i', '-'
+		]
 
+posCapStream = 0
+proc = sp.Popen(command, stdin=sp.PIPE, stderr=sp.PIPE)
 
 class dataFrame(object):
 	"""docstring for sendFrameStreaming"""
+	frame2stream = ""
 	def __init__(self):
 		super(dataFrame, self).__init__()
 		self.i = 0
 		#self.streamToNet()
-
 		#p = Popen(cmd, stdin=PIPE)
 
 	def saveFrame(self, frame):
 		self.frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-		out.write(self.frame)
+		global frame2stream
+		frame2stream = self.frame
+		# out.write(self.frame)
 		# self.i=0
 		# cv2.imwrite('img/frames/%07d.jpg' %self.i,self.frame)
 		# self.i+=1
 		#ffmpeg -f image
 		#cmd2=("ffmpeg -y -f image2pipe -vcodec mjpeg -r 24 -i - -vcodec mpeg4 -qscale 5 -r 24 output.mpg")
-		proc = sp.Popen(command, stdin=sp.PIPE, stderr=sp.PIPE)
+		# proc = sp.Popen(command, stdin=sp.PIPE, stderr=sp.PIPE)
 		proc.stdin.write(self.frame.tostring())
 
 
@@ -352,13 +365,12 @@ class dataFrame(object):
 		# arrayData = np.array(self.frame)
 		# im = Image.fromarray(arrayData)
 		# call("avconv -f video4linux2 -i %07d mycam2.mpeg") %im
-
-	def sendFrame(self):
+	
 		#dato = posCapStream-10
 		# i = posCapStream
 		#Call(cmd)  # %i
 		
-		proc.stdin.write(self.frame.tostring())
+		# proc.stdin.write(self.frame.tostring())
 
 		# avconv -i <fuente_archivo> -vcodec libx264 -f flv rtmp://moises.inf.uct.cl/live/canal1
 		# avconv -f video4linux2 -i /dev/video0 mycam2.mpeg -vcodec libx264 -f flv rtmp://moises.inf.uct.cl/live/canal1
@@ -383,7 +395,7 @@ class dataFrame(object):
 		# stream = conn.create_stream()
 		# stream.write("img/bg.avi")
 
-def streamToNet():
+# def streamToNet():
 
 	# capToStream = cv2.VideoCapture(pathVid)
 
@@ -398,8 +410,8 @@ def streamToNet():
 	# 	posFrame = capToStream.get(cv2.CAP_PROP_FRAME_COUNT)-3  # se usa CAP_PROP_FRAME_COUNT para tener el largo del video guardado y de ahi partir el streaming
 	# else:
 	# 	posFrame = capToStream.get(cv2.CAP_PROP_FRAME_COUNT)
-	print cmd
-	call(cmd)
+	# print cmd
+	# call(cmd)
 	# p.stdin(imgEncode)
 	# p.stdin.close()
 	# capToStream.set(cv2.CAP_PROP_POS_FRAMES, posFrame)
